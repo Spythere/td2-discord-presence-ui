@@ -1,2 +1,5 @@
-# td2-discord-presence-ui
-Discord presence for Train Driver 2 simulator activity, made in Electron
+# TD2 Discord Presence - UI version
+
+An Electron application with Vue and TypeScript
+
+Installer download available in the 'Releases' section!
