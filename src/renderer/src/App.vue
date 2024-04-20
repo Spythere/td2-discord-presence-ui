@@ -2,6 +2,7 @@
 import { Ref, ref } from 'vue'
 import { PlayerActivity } from './types/common'
 import { PlayerActivityResponse } from './types/api'
+import axios from 'axios'
 
 const nickname = ref('')
 const searchedNickname = ref('')
@@ -28,13 +29,11 @@ async function fetchPlayerData() {
   console.log('Fetching data...', searchedNickname)
 
   try {
-    const data = (await (
-      await fetch(
-        `https://stacjownik.spythere.eu/api/getPlayerActivity?name=${searchedNickname.value}`
-      )
-    ).json()) as PlayerActivityResponse
+    const response = await axios.get<PlayerActivityResponse>(
+      `https://stacjownik.spythere.eu/api/getPlayerActivity?name=${searchedNickname.value}`
+    )
 
-    ipcRunPresence(data)
+    ipcRunPresence(response.data)
   } catch (error) {
     console.error('Wystąpił błąd podczas pobierania danych!')
   }
