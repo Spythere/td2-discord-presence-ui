@@ -1,5 +1,5 @@
 import { Client } from 'discord-rpc'
-import { ActivityType, DispatcherStatus, PlayerActivity } from './types/common'
+import { ActivityType, DispatcherStatus, PlayerActivity } from '@shared/types/common'
 
 function getDispatcherStatusText(status: DispatcherStatus | number) {
   switch (status) {
@@ -60,13 +60,10 @@ export class PresenceManager {
       }
 
       const { timetable } = driver
-      let driverPosition = ''
+      let driverPosition = `- ${driver.speed} km/h`
 
-      if (driver.connectedTrack) driverPosition = 'szlak: ' + driver.connectedTrack
-      else if (driver.signal) driverPosition = 'semafor: ' + driver.signal
-      else driverPosition = '---'
-
-      driverPosition += ` (${driver.speed} km/h)`
+      if (driver.connectedTrack) driverPosition += ` | szlak: ${driver.connectedTrack}`
+      else if (driver.signal) driverPosition += ` | semafor: ${driver.signal}`
 
       const stationName = driver.currentStationName.includes('.sc')
         ? `${driver.currentStationName.replace('.sc', '').split(' ').slice(0, -1).join(' ')} - offline`
@@ -85,7 +82,7 @@ export class PresenceManager {
 
       await this.rpc.setActivity({
         details,
-        state: `${stationName} / ${driverPosition}`,
+        state: `${stationName} ${driverPosition}`,
         largeImageKey: 'td2',
         largeImageText: 'Train Driver 2',
         smallImageKey: 'driver',

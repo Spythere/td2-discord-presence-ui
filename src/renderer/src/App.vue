@@ -1,26 +1,24 @@
 <script setup lang="ts">
 import { Ref, ref } from 'vue'
-import { PlayerActivity } from './types/common'
-import { PlayerActivityResponse } from './types/api'
 import axios from 'axios'
+import { PlayerActivityResponse } from '@shared/types/api'
+import { PresenceMode } from '@shared/types/common'
+import icon from '../../../resources/icon.png'
+import { version } from '../../../package.json'
 
+let interval: number | undefined = undefined
 const nickname = ref('')
 const searchedNickname = ref('')
 
-const presenceMode = ref('disconnected')
+const presenceMode = ref('disconnected') as Ref<PresenceMode>
 const presenceUser = ref(null) as Ref<null | string>
-
-let interval: number | undefined = undefined
-
-const ipcRunPresence = (data: PlayerActivity) =>
-  window.electron.ipcRenderer.send('runPresence', [data])
-
-const ipcResetPresence = () => window.electron.ipcRenderer.send('resetPresence')
-const ipcExit = () => window.electron.ipcRenderer.send('exit')
+const presenceError = ref(null) as Ref<null | string>
 
 window.electron.ipcRenderer.on('presenceMode', (_event, args) => {
   presenceMode.value = args[0]
   presenceUser.value = args[1]
+
+  if (args[2]) presenceError.value = args[2]
 })
 
 async function fetchPlayerData() {
@@ -33,7 +31,7 @@ async function fetchPlayerData() {
       `https://stacjownik.spythere.eu/api/getPlayerActivity?name=${searchedNickname.value}`
     )
 
-    ipcRunPresence(response.data)
+    window.presence.runPresence(response.data)
   } catch (error) {
     console.error('Wystąpił błąd podczas pobierania danych!')
   }
@@ -61,16 +59,23 @@ function resetPresence() {
   searchedNickname.value = ''
   nickname.value = ''
 
-  ipcResetPresence()
+  window.presence.resetPresence()
 }
 
 function exit() {
-  ipcExit()
+  window.context.exitApp()
 }
 </script>
 
 <template>
   <div class="app-container">
+    <div class="logo">
+      <img :src="icon" width="70" alt="" />
+      <span>
+        TD2 DISCORD <br />
+        PRESENCE <sup style="font-size: 0.7em">v{{ version }}</sup>
+      </span>
+    </div>
     <div class="player-input">
       <input
         v-model="nickname"
@@ -83,17 +88,41 @@ function exit() {
 
     <div class="actions">
       <button class="action" @click="scheduleDataRefresh">Szukaj</button>
-      <button class="action" @click="resetPresence">Reset</button>
+      <button class="action" @click="resetPresence">Resetuj</button>
       <button class="action" @click="exit">Wyjdź</button>
     </div>
 
-    <div class="presence-status">Status Presence: {{ presenceMode }} {{ presenceUser }}</div>
+    <div class="presence-status">
+      <div class="connection" :class="presenceMode">
+        Połączenie z Discordem:
+        <span v-if="presenceMode == 'disconnected'">nieaktywne</span>
+        <span v-else-if="presenceMode == 'error'"> błąd ({{ presenceError }}) </span>
+        <span v-else>aktywne</span>
+      </div>
+
+      <div v-if="presenceMode == 'driver'" class="driver">Maszynista: {{ presenceUser }}</div>
+      <div v-else-if="presenceMode == 'dispatcher'" class="dispatcher">
+        Dyżurny: {{ presenceUser }}
+      </div>
+      <div v-else-if="presenceMode != 'error'" class="none">Nie wykryto użytkownika online</div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .app-container {
   text-align: center;
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: bold;
+  font-size: 1.2em;
+
+  margin-bottom: 1em;
 }
 
 .player-input {
@@ -107,6 +136,18 @@ function exit() {
 }
 
 .presence-status {
-  margin-top: 0.5em;
+  margin-top: 1em;
+}
+
+.connection {
+  color: limegreen;
+}
+
+.connection.disconnected {
+  color: #bbb;
+}
+
+.connection.error {
+  color: firebrick;
 }
 </style>

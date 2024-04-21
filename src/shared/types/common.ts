@@ -1,4 +1,5 @@
 export type ActivityType = 'none' | 'driver' | 'dispatcher'
+export type PresenceMode = ActivityType | 'disconnected' | 'connected' | 'error'
 
 export interface PlayerActivity {
   driver: Driver | null

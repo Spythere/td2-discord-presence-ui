@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: td2-discord-presence
+productName: TD2 Discord Presence
 directories:
   buildResources: build
 files:
@@ -13,6 +13,9 @@ asarUnpack:
   - resources/**
 win:
   executableName: td2-discord-presence
+  publish:
+    provider: github
+    repo: https://github.com/Spythere/td2-discord-presence-ui
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -38,6 +41,4 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
+

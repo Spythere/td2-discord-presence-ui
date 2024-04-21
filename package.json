@@ -1,10 +1,10 @@
 {
   "name": "td2-discord-presence",
   "version": "1.0.0",
-  "description": "An Electron application with Vue and TypeScript",
+  "description": "Discord Presence wyświetlający aktywność w symulatorze Train Driver 2",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Spythere",
+  "repository": "https://github.com/Spythere/td2-discord-presence-ui",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
@@ -25,6 +25,7 @@
     "@electron-toolkit/utils": "^3.0.0",
     "axios": "^1.6.8",
     "discord-rpc": "^4.0.1",
+    "electron-settings": "^4.0.3",
     "electron-updater": "^6.1.7"
   },
   "devDependencies": {
