@@ -6,6 +6,7 @@ import { PresenceManager } from './presenceManager'
 import icon from '../../resources/icon.png?asset'
 import { Menu, Tray } from 'electron/main'
 import settings from 'electron-settings'
+import { PlayerActivity } from '../shared/types/common'
 
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
@@ -70,7 +71,7 @@ app.whenReady().then(() => {
 
   // IPC
   ipcMain.on('runPresence', async (_event, args) => {
-    const data = args[0]
+    const data = args[0] as PlayerActivity
 
     if (!(await settings.get('reminder.set'))) {
       dialog.showMessageBox({
@@ -97,8 +98,10 @@ app.whenReady().then(() => {
 
       if (data) {
         const activityMode = await presenceManager.setPlayerActivity(data)
-
         mainWindow.webContents.send('presenceMode', activityMode)
+      } else {
+        await presenceManager.resetActivity()
+        mainWindow.webContents.send('presenceMode', ['connected', null])
       }
     } catch (error) {
       mainWindow.webContents.send('presenceMode', ['error', null, error])
@@ -109,14 +112,12 @@ app.whenReady().then(() => {
   ipcMain.on('resetPresence', () => {
     if (!presenceManager.client.user) return
 
-    try {
-      console.log('Presence: resetting...')
-      presenceManager.client.clearActivity()
-      mainWindow.webContents.send('presenceMode', ['connected', null])
-    } catch (error) {
-      mainWindow.webContents.send('presenceMode', ['error', null, error])
-      console.log('Presence: error occured when resetting activity status', error)
-    }
+    presenceManager
+      .resetActivity()
+      .then(() => {
+        mainWindow.webContents.send('presenceMode', ['connected', null])
+      })
+      .catch((error) => mainWindow.webContents.send('presenceMode', ['error', null, error]))
   })
 
   ipcMain.on('exitApp', () => {

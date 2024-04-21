@@ -49,6 +49,12 @@ export class PresenceManager {
     this.currentDriverMode = 'relation'
   }
 
+  async resetActivity() {
+    await this.client.clearActivity()
+    this.lastPlayerName = ''
+    this.resetMode()
+  }
+
   async setPlayerActivity(activityData: PlayerActivity): Promise<[ActivityType, string | null]> {
     if (!this.rpc || !this.rpc.user) return ['none', null]
 
@@ -99,8 +105,6 @@ export class PresenceManager {
         instance: false
       })
 
-      console.log('Presence: driver activity set')
-
       this.currentDriverMode = this.currentDriverMode == 'driver' ? 'relation' : 'driver'
       this.lastPlayerName = driver.driverName
       return ['driver', driver.driverName]
@@ -134,17 +138,12 @@ export class PresenceManager {
         instance: false
       })
 
-      console.log(
-        `Presence: dispatcher activity set (index: ${this.currentDispatcherIndex}/${dispatcher.length})`
-      )
-
       this.currentDispatcherIndex = ++this.currentDispatcherIndex % dispatcher.length
       this.lastPlayerName = dispatcher[0].dispatcherName
       return ['dispatcher', dispatcher[0].dispatcherName]
     }
 
-    console.log('Presence: none activity detected')
-    this.lastPlayerName = ''
+    await this.resetActivity()
     return ['none', null]
   }
 }

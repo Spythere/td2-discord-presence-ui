@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue'
+import { Ref, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { PlayerActivityResponse } from '@shared/types/api'
 import { PresenceMode } from '@shared/types/common'
 import icon from '../../../resources/icon.png'
 import { version } from '../../../package.json'
 
-let interval: number | undefined = undefined
+let nextFetchingTime = 0
+
 const nickname = ref('')
 const searchedNickname = ref('')
 
@@ -21,10 +22,17 @@ window.electron.ipcRenderer.on('presenceMode', (_event, args) => {
   if (args[2]) presenceError.value = args[2]
 })
 
+onMounted(() => {
+  setInterval(() => {
+    if (Date.now() >= nextFetchingTime) fetchPlayerData()
+  }, 5000)
+})
+
 async function fetchPlayerData() {
-  if (nickname.value == '') return
+  if (searchedNickname.value == '') return
 
   console.log('Fetching data...', searchedNickname)
+  nextFetchingTime = Date.now() + 10000
 
   try {
     const response = await axios.get<PlayerActivityResponse>(
@@ -37,25 +45,14 @@ async function fetchPlayerData() {
   }
 }
 
-function scheduleDataRefresh() {
+function searchUser() {
   if (searchedNickname.value == nickname.value) return
 
   searchedNickname.value = nickname.value
-
   fetchPlayerData()
-
-  if (!interval)
-    interval = window.setInterval(() => {
-      fetchPlayerData()
-    }, 5000)
 }
 
 function resetPresence() {
-  if (interval) {
-    window.clearInterval(interval)
-    interval = undefined
-  }
-
   searchedNickname.value = ''
   nickname.value = ''
 
@@ -82,12 +79,12 @@ function exit() {
         type="text"
         placeholder="Wpisz nick..."
         :disabled="searchedNickname != ''"
-        @keydown.enter="scheduleDataRefresh"
+        @keydown.enter="searchUser"
       />
     </div>
 
     <div class="actions">
-      <button class="action" @click="scheduleDataRefresh">Szukaj</button>
+      <button class="action" @click="searchUser">Szukaj</button>
       <button class="action" @click="resetPresence">Resetuj</button>
       <button class="action" @click="exit">Wyjdź</button>
     </div>
