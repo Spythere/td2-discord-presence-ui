@@ -8,9 +8,6 @@ import { Menu, Tray } from 'electron/main'
 import settings from 'electron-settings'
 import { PlayerActivity } from '../shared/types/common'
 
-autoUpdater.autoDownload = false
-autoUpdater.autoInstallOnAppQuit = true
-
 const presenceManager = new PresenceManager()
 let mainWindow: BrowserWindow
 
@@ -32,6 +29,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    mainWindow.webContents.send('updateStatus', ['Test...'])
   })
 
   mainWindow.on('minimize', function (event: Event) {
@@ -52,7 +50,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  // autoUpdater.checkForUpdatesAndNotify()
+  autoUpdater.checkForUpdatesAndNotify()
+
   const tray = new Tray(icon)
 
   const contextMenu = Menu.buildFromTemplate([
@@ -69,9 +68,9 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC
-  ipcMain.on('runPresence', async (_event, args) => {
-    const data = args[0] as PlayerActivity
+  // IPC listeners
+  ipcMain.on('initPresence', async () => {
+    console.log('Presence: initPresence')
 
     if (!(await settings.get('reminder.set'))) {
       dialog.showMessageBox({
@@ -84,18 +83,22 @@ app.whenReady().then(() => {
       await settings.set('reminder', { set: true })
     }
 
+    if (!presenceManager.client.user) {
+      console.log('Presence: connecting...')
+      await presenceManager.client.login({ clientId: '1080201895139885066' })
+
+      mainWindow.webContents.send('presenceMode', ['connected', null])
+
+      console.log('Presence: connected successfully')
+    }
+  })
+
+  ipcMain.on('runPresence', async (_event, args) => {
+    const data = args[0] as PlayerActivity
+
     console.log('Presence: runPresence')
 
     try {
-      if (!presenceManager.client.user) {
-        console.log('Presence: connecting...')
-        await presenceManager.client.login({ clientId: '1080201895139885066' })
-
-        mainWindow.webContents.send('presenceMode', ['connected', null])
-
-        console.log('Presence: connected successfully')
-      }
-
       if (data) {
         const activityMode = await presenceManager.setPlayerActivity(data)
         mainWindow.webContents.send('presenceMode', activityMode)

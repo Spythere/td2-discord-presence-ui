@@ -1,10 +1,23 @@
 {
   "name": "td2-discord-presence",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Discord Presence wyświetlający aktywność w symulatorze Train Driver 2",
   "main": "./out/main/index.js",
   "author": "Spythere",
-  "repository": "https://github.com/Spythere/td2-discord-presence-ui",
+  "build": {
+    "appId": "com.spythere",
+    "executableName": "td2-discord-presence",
+    "artifactName": "${name}-${version}-setup.${ext}",
+    "productName": "TD2 Discord Presence",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "spythere",
+        "repo": "td2-discord-presence-ui",
+        "private": false
+      }
+    ]
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
@@ -17,8 +30,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "publish": "npm run build && electron-builder -p always --win"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
