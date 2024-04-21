@@ -10,7 +10,6 @@ let nextFetchingTime = 0
 
 const nickname = ref('')
 const searchedNickname = ref('')
-const updateStatus = ref('...')
 
 const presenceMode = ref('disconnected') as Ref<PresenceMode>
 const presenceUser = ref(null) as Ref<null | string>
@@ -21,10 +20,6 @@ window.electron.ipcRenderer.on('presenceMode', (_event, args) => {
   presenceUser.value = args[1]
 
   if (args[2]) presenceError.value = args[2]
-})
-
-window.electron.ipcRenderer.on('updateStatus', (_event, args) => {
-  updateStatus.value = args[0]
 })
 
 onMounted(() => {
@@ -108,8 +103,6 @@ function exit() {
       </div>
       <div v-else-if="presenceMode != 'error'" class="none">Nie wykryto użytkownika online</div>
     </div>
-
-    <div>{{ updateStatus }}</div>
   </div>
 </template>
 

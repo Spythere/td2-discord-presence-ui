@@ -27,9 +27,20 @@ function createWindow(): void {
     }
   })
 
+  /* Auto Updater events */
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow.webContents.send('updateStatus', ['New version'])
+
+    dialog.showMessageBox({
+      message: `Nowa wersja aplikacji dostępna (v${info.version})! Aktualizacja zostanie zainstalowana automatycznie po wyjściu z aplikacji!`,
+      title: 'Nowa wersja TD2 Discord Presence',
+      icon
+    })
+  })
+
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
-    mainWindow.webContents.send('updateStatus', ['Test...'])
   })
 
   mainWindow.on('minimize', function (event: Event) {
@@ -138,21 +149,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-})
-
-/* Auto Updater events */
-autoUpdater.on('checking-for-update', () => {
-  mainWindow.webContents.send('updateStatus', ['Checking...'])
-})
-
-autoUpdater.on('update-available', (info) => {
-  console.log('Nowa wersja :D', info.version)
-
-  mainWindow.webContents.send('updateStatus', ['New version'])
-})
-
-autoUpdater.on('update-not-available', (info) => {
-  console.log('Brak nowej wersji :|', info.version)
-
-  mainWindow.webContents.send('updateStatus', ['Not available'])
 })

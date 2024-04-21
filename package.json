@@ -1,6 +1,6 @@
 {
   "name": "td2-discord-presence",
-  "version": "1.0.3",
+  "version": "1.0.2",
   "description": "Discord Presence wyświetlający aktywność w symulatorze Train Driver 2",
   "main": "./out/main/index.js",
   "author": "Spythere",
@@ -30,7 +30,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
-    "publish": "npm run build && electron-builder -p always --win"
+    "build:release": "npm run build && electron-builder -p always --win"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
