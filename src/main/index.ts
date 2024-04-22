@@ -44,7 +44,7 @@ async function startPresence(currentPlayerName: string) {
   updatePresence(currentPlayerName)
 
   if (interval != null) clearInterval(interval)
-  interval = setInterval(() => updatePresence(currentPlayerName), 5000)
+  interval = setInterval(() => updatePresence(currentPlayerName), 10000)
 }
 
 async function stopPresence() {
