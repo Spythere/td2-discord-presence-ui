@@ -24,45 +24,42 @@ function getDispatcherStatusText(status: DispatcherStatus | number) {
   }
 }
 
-export class PresenceManager {
-  private rpc!: Client
-  private currentDispatcherIndex = 0
-  private lastPlayerName = ''
-  private startDate = new Date()
-  private currentDriverMode = 'relation' as 'relation' | 'driver'
+export abstract class PresenceManager {
+  public static client = new Client({ transport: 'ipc' })
+  private static currentDispatcherIndex = 0
+  private static lastPlayerName = ''
+  private static startDate = new Date()
+  private static currentDriverMode = 'relation' as 'relation' | 'driver'
 
-  constructor() {
-    this.init()
-  }
-
-  private init() {
-    this.rpc = new Client({ transport: 'ipc' })
-  }
-
-  get client() {
-    return this.rpc
-  }
-
-  resetMode() {
+  static resetState() {
     this.currentDispatcherIndex = 0
     this.startDate = new Date()
     this.currentDriverMode = 'relation'
   }
 
-  async resetActivity() {
-    await this.client.clearActivity()
-    this.lastPlayerName = ''
-    this.resetMode()
+  static async connectToDiscord() {
+    if (this.client.user) return
+
+    this.client = new Client({ transport: 'ipc' })
+    await this.client.login({ clientId: '1080201895139885066' })
   }
 
-  async setPlayerActivity(activityData: PlayerActivity): Promise<[ActivityType, string | null]> {
-    if (!this.rpc || !this.rpc.user) return ['none', null]
+  static async resetActivity() {
+    await this.client.clearActivity()
+    this.resetState()
+    this.lastPlayerName = ''
+  }
+
+  static async setPlayerActivity(
+    activityData: PlayerActivity
+  ): Promise<[ActivityType, string | null]> {
+    if (!this.client || !this.client.user) throw 'Discord disconnected'
 
     const { driver, dispatcher } = activityData
 
     if (driver != null) {
       if (this.lastPlayerName != driver.driverName) {
-        this.resetMode()
+        this.resetState()
       }
 
       const { timetable } = driver
@@ -86,7 +83,7 @@ export class PresenceManager {
         ? new Date(timetable.stopList[0].departureRealTimestamp)
         : this.startDate
 
-      await this.rpc.setActivity({
+      await this.client.setActivity({
         details,
         state: `${stationName} ${driverPosition}`,
         largeImageKey: 'td2',
@@ -101,8 +98,7 @@ export class PresenceManager {
               `https://stacjownik-td2.web.app/trains?trainId=${driver.driverName}${driver.trainNo}`
             )
           }
-        ],
-        instance: false
+        ]
       })
 
       this.currentDriverMode = this.currentDriverMode == 'driver' ? 'relation' : 'driver'
@@ -110,13 +106,13 @@ export class PresenceManager {
       return ['driver', driver.driverName]
     } else if (dispatcher != null && dispatcher.length > 0) {
       if (this.lastPlayerName != dispatcher[0].dispatcherName) {
-        this.resetMode()
+        this.resetState()
       }
 
       // in case of a dispatcher count changed since the last update
       this.currentDispatcherIndex = this.currentDispatcherIndex % dispatcher.length
 
-      await this.rpc.setActivity({
+      await this.client.setActivity({
         details: `Dyżurny ${dispatcher[this.currentDispatcherIndex].dispatcherName} | ${dispatcher[this.currentDispatcherIndex].stationName}`,
         state: getDispatcherStatusText(dispatcher[this.currentDispatcherIndex].dispatcherStatus),
         largeImageKey: 'td2',
@@ -133,9 +129,7 @@ export class PresenceManager {
               `https://stacjownik-td2.web.app/scenery?station=${dispatcher[this.currentDispatcherIndex].stationName}`
             )
           }
-        ],
-
-        instance: false
+        ]
       })
 
       this.currentDispatcherIndex = ++this.currentDispatcherIndex % dispatcher.length

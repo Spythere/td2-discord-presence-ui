@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { PlayerActivity } from '@shared/types/common'
 
 if (process.contextIsolated) {
   try {
@@ -11,9 +10,7 @@ if (process.contextIsolated) {
     })
 
     contextBridge.exposeInMainWorld('presence', {
-      runPresence: (playerActivity: PlayerActivity) =>
-        ipcRenderer.send('runPresence', [playerActivity]),
-
+      startPresence: (playerName: string) => ipcRenderer.send('startPresence', [playerName]),
       resetPresence: () => ipcRenderer.send('resetPresence')
     })
   } catch (error) {

@@ -2,14 +2,95 @@ import { app, shell, BrowserWindow, ipcMain, Event, dialog } from 'electron'
 import { join } from 'path'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
-import { PresenceManager } from './presenceManager'
 import icon from '../../resources/icon.png?asset'
 import { Menu, Tray } from 'electron/main'
 import settings from 'electron-settings'
-import { PlayerActivity } from '../shared/types/common'
+import { PresenceManager } from './presenceManager'
+import { fetchPresenceData } from './http'
+import { PresenceModeDataIPC } from '../shared/types/ipc'
 
-const presenceManager = new PresenceManager()
 let mainWindow: BrowserWindow
+let interval: undefined | NodeJS.Timeout = undefined
+
+function ipcCallbackToRenderer(mainWindow: BrowserWindow, data: PresenceModeDataIPC) {
+  console.log(PresenceManager.client.user)
+
+  mainWindow.webContents.send('presenceMode', [
+    {
+      discordUsername: PresenceManager.client.user?.username ?? '---',
+      ...data
+    } as PresenceModeDataIPC
+  ])
+}
+
+async function initPresence() {
+  console.log('presence: init')
+
+  if (!(await settings.get('reminder.set'))) {
+    dialog.showMessageBox({
+      message:
+        'Upewnij się, że twoje ustawienia statusów aktywności Discorda (Ustawienia -> Prywatność aktywności) oraz osobiste ustawienia prywatności serwera, na którym chcesz pokazać aktywność są włączone! W innym wypadku aktywność nie będzie pokazana dla innych osób (nawet jeśli u ciebie jest ona wyświetlana)!',
+      title: 'Przypomnienie o ustawieniach prywatności!',
+      icon
+    })
+
+    await settings.set('reminder', { set: true })
+  }
+
+  await PresenceManager.connectToDiscord()
+}
+
+async function startPresence(currentPlayerName: string) {
+  console.log('presence: start')
+
+  updatePresence(currentPlayerName)
+
+  if (interval != null) clearInterval(interval)
+  interval = setInterval(() => updatePresence(currentPlayerName), 5000)
+}
+
+async function stopPresence() {
+  console.log('presence: stop')
+  clearInterval(interval)
+
+  if (!PresenceManager.client) return
+
+  if (!PresenceManager.client.user) {
+    ipcCallbackToRenderer(mainWindow, { connected: false, error: 'No discord connection' })
+    // mainWindow.webContents.send('presenceMode', ['error', null, 'No discord connection'])
+    return
+  }
+
+  try {
+    PresenceManager.resetActivity()
+    ipcCallbackToRenderer(mainWindow, { connected: true })
+    // mainWindow.webContents.send('presenceMode', ['connected', null])
+  } catch (error) {
+    ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+    // mainWindow.webContents.send('presenceMode', ['error', null, error])
+  }
+}
+
+async function updatePresence(currentPlayerName: string) {
+  console.log('presence: update ' + currentPlayerName)
+
+  try {
+    ipcCallbackToRenderer(mainWindow, { connected: true, activityType: 'searching' })
+    const data = (await fetchPresenceData(currentPlayerName)).data
+
+    const activityMode = await PresenceManager.setPlayerActivity(data)
+
+    ipcCallbackToRenderer(mainWindow, {
+      connected: true,
+      activityType: activityMode[0],
+      activityUser: activityMode[1] ?? undefined
+    })
+  } catch (error) {
+    ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+    // mainWindow.webContents.send('presenceMode', ['error', null, error])
+    console.error('Presence: error occured!', error)
+  }
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -79,59 +160,24 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC listeners
-  ipcMain.on('initPresence', async () => {
-    console.log('Presence: initPresence')
-
-    if (!(await settings.get('reminder.set'))) {
-      dialog.showMessageBox({
-        message:
-          'Upewnij się, że twoje ustawienia statusów aktywności Discorda (Ustawienia -> Prywatność aktywności) oraz osobiste ustawienia prywatności serwera, na którym chcesz pokazać aktywność są włączone! W innym wypadku aktywność nie będzie pokazana dla innych osób (nawet jeśli u ciebie jest ona wyświetlana)!',
-        title: 'Przypomnienie o ustawieniach prywatności!',
-        icon
-      })
-
-      await settings.set('reminder', { set: true })
-    }
-
-    if (!presenceManager.client.user) {
-      console.log('Presence: connecting...')
-      await presenceManager.client.login({ clientId: '1080201895139885066' })
-
-      mainWindow.webContents.send('presenceMode', ['connected', null])
-
-      console.log('Presence: connected successfully')
-    }
-  })
-
-  ipcMain.on('runPresence', async (_event, args) => {
-    const data = args[0] as PlayerActivity
-
-    console.log('Presence: runPresence')
-
+  /* IPC listeners */
+  ipcMain.on('startPresence', async (_event, args) => {
     try {
-      if (data) {
-        const activityMode = await presenceManager.setPlayerActivity(data)
-        mainWindow.webContents.send('presenceMode', activityMode)
-      } else {
-        await presenceManager.resetActivity()
-        mainWindow.webContents.send('presenceMode', ['connected', null])
+      if (!PresenceManager.client.user) {
+        await initPresence()
       }
+
+      const currentPlayerName = args[0]
+      startPresence(currentPlayerName)
     } catch (error) {
-      mainWindow.webContents.send('presenceMode', ['error', null, error])
-      console.error('Presence: error occured!', error)
+      ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+      // mainWindow.webContents.send('presenceMode', ['error', null, error])
+      console.log(error)
     }
   })
 
   ipcMain.on('resetPresence', () => {
-    if (!presenceManager.client.user) return
-
-    presenceManager
-      .resetActivity()
-      .then(() => {
-        mainWindow.webContents.send('presenceMode', ['connected', null])
-      })
-      .catch((error) => mainWindow.webContents.send('presenceMode', ['error', null, error]))
+    stopPresence()
   })
 
   ipcMain.on('exitApp', () => {

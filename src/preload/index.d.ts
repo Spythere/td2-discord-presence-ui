@@ -1,11 +1,10 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { PlayerActivity } from '@shared/types/common'
 
 declare global {
   interface Window {
     electron: ElectronAPI
     presence: {
-      runPresence: (playerActivity: PlayerActivity) => void
+      startPresence: (playerName: string) => void
       resetPresence: () => void
     }
     context: {

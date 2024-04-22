@@ -1,48 +1,28 @@
 <script setup lang="ts">
-import { Ref, onMounted, ref } from 'vue'
-import axios from 'axios'
-import { PlayerActivityResponse } from '@shared/types/api'
-import { PresenceMode } from '@shared/types/common'
+import { reactive, ref } from 'vue'
 import icon from '../../../resources/icon.png'
 import { version } from '../../../package.json'
-
-let nextFetchingTime = 0
+import { PresenceModeDataIPC } from '@shared/types/ipc'
 
 const nickname = ref('')
 const searchedNickname = ref('')
 
-const presenceMode = ref('disconnected') as Ref<PresenceMode>
-const presenceUser = ref(null) as Ref<null | string>
-const presenceError = ref(null) as Ref<null | string>
+const presenceData = reactive({ connected: false }) as PresenceModeDataIPC
 
 window.electron.ipcRenderer.on('presenceMode', (_event, args) => {
-  presenceMode.value = args[0]
-  presenceUser.value = args[1]
+  const payback = args[0] as PresenceModeDataIPC
 
-  if (args[2]) presenceError.value = args[2]
-})
-
-onMounted(() => {
-  setInterval(() => {
-    if (Date.now() >= nextFetchingTime) fetchPlayerData()
-  }, 1000)
+  presenceData['activityType'] = payback['activityType']
+  presenceData['activityUser'] = payback['activityUser']
+  presenceData['connected'] = payback['connected']
+  presenceData['discordUsername'] = payback['discordUsername']
+  presenceData['error'] = payback['error']
 })
 
 async function fetchPlayerData() {
   if (searchedNickname.value == '') return
 
-  console.log('Fetching data...', searchedNickname)
-  nextFetchingTime = Date.now() + 10000
-
-  try {
-    const response = await axios.get<PlayerActivityResponse>(
-      `https://stacjownik.spythere.eu/api/getPlayerActivity?name=${searchedNickname.value}`
-    )
-
-    window.presence.runPresence(response.data)
-  } catch (error) {
-    console.error('Wystąpił błąd podczas pobierania danych!')
-  }
+  window.presence.startPresence(searchedNickname.value)
 }
 
 function searchUser() {
@@ -90,18 +70,34 @@ function exit() {
     </div>
 
     <div class="presence-status">
-      <div class="connection" :class="presenceMode">
-        Połączenie z Discordem:
-        <span v-if="presenceMode == 'disconnected'">nieaktywne</span>
-        <span v-else-if="presenceMode == 'error'"> błąd ({{ presenceError }}) </span>
-        <span v-else>aktywne</span>
+      <div
+        class="connection"
+        :data-error="presenceData.error !== undefined"
+        :data-connected="presenceData.connected"
+      >
+        <span v-if="presenceData.error">
+          Błąd podczas łączenia z Discordem ({{ presenceData.error }})
+        </span>
+        <span v-else-if="presenceData.connected == false">Brak połączenia z Discordem</span>
+        <span v-else>
+          Połączenie z Discordem aktywne (użytkownik: {{ presenceData.discordUsername }})
+        </span>
       </div>
 
-      <div v-if="presenceMode == 'driver'" class="driver">Maszynista: {{ presenceUser }}</div>
-      <div v-else-if="presenceMode == 'dispatcher'" class="dispatcher">
-        Dyżurny: {{ presenceUser }}
+      <div v-if="presenceData.activityType == 'driver'" class="driver">
+        Maszynista: {{ presenceData.activityUser }}
       </div>
-      <div v-else-if="presenceMode != 'error'" class="none">Nie wykryto użytkownika online</div>
+
+      <div v-else-if="presenceData.activityType == 'dispatcher'" class="dispatcher">
+        Dyżurny: {{ presenceData.activityUser }}
+      </div>
+
+      <div v-else-if="presenceData.activityType == 'none'">
+        Oczekiwanie na gracza <i>{{ searchedNickname }}</i
+        >...
+      </div>
+
+      <div v-else>...</div>
     </div>
   </div>
 </template>
@@ -134,17 +130,18 @@ function exit() {
 
 .presence-status {
   margin-top: 1em;
+  min-height: 60px;
 }
 
 .connection {
   color: limegreen;
 }
 
-.connection.disconnected {
+.connection[data-connected='false'] {
   color: #bbb;
 }
 
-.connection.error {
+.connection[data-error='true'] {
   color: firebrick;
 }
 </style>
