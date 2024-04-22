@@ -13,12 +13,10 @@ let mainWindow: BrowserWindow
 let interval: undefined | NodeJS.Timeout = undefined
 
 function ipcCallbackToRenderer(mainWindow: BrowserWindow, data: PresenceModeDataIPC) {
-  console.log(PresenceManager.client.user)
-
   mainWindow.webContents.send('presenceMode', [
     {
-      discordUsername: PresenceManager.client.user?.username ?? '---',
-      ...data
+      ...data,
+      discordUsername: PresenceManager.client.user?.username ?? '---'
     } as PresenceModeDataIPC
   ])
 }
@@ -26,7 +24,7 @@ function ipcCallbackToRenderer(mainWindow: BrowserWindow, data: PresenceModeData
 async function initPresence() {
   console.log('presence: init')
 
-  if (!(await settings.get('reminder.set'))) {
+  if (!(await settings.get('reminder2.set'))) {
     dialog.showMessageBox({
       message:
         'Upewnij się, że twoje ustawienia statusów aktywności Discorda (Ustawienia -> Prywatność aktywności) oraz osobiste ustawienia prywatności serwera, na którym chcesz pokazać aktywność są włączone! W innym wypadku aktywność nie będzie pokazana dla innych osób (nawet jeśli u ciebie jest ona wyświetlana)!',
@@ -34,7 +32,7 @@ async function initPresence() {
       icon
     })
 
-    await settings.set('reminder', { set: true })
+    await settings.set('reminder2', { set: true })
   }
 
   await PresenceManager.connectToDiscord()
@@ -57,17 +55,14 @@ async function stopPresence() {
 
   if (!PresenceManager.client.user) {
     ipcCallbackToRenderer(mainWindow, { connected: false, error: 'No discord connection' })
-    // mainWindow.webContents.send('presenceMode', ['error', null, 'No discord connection'])
     return
   }
 
   try {
     PresenceManager.resetActivity()
     ipcCallbackToRenderer(mainWindow, { connected: true })
-    // mainWindow.webContents.send('presenceMode', ['connected', null])
   } catch (error) {
     ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
-    // mainWindow.webContents.send('presenceMode', ['error', null, error])
   }
 }
 
@@ -87,7 +82,6 @@ async function updatePresence(currentPlayerName: string) {
     })
   } catch (error) {
     ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
-    // mainWindow.webContents.send('presenceMode', ['error', null, error])
     console.error('Presence: error occured!', error)
   }
 }
@@ -108,8 +102,16 @@ function createWindow(): void {
     }
   })
 
-  /* Auto Updater events */
+  /* Single instance lock */
+  const isSingleInstance = app.requestSingleInstanceLock()
+  if (!isSingleInstance) app.quit()
 
+  app.on('second-instance', () => {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  })
+
+  /* Auto Updater events */
   autoUpdater.on('update-available', (info) => {
     mainWindow.webContents.send('updateStatus', ['New version'])
 
@@ -126,7 +128,6 @@ function createWindow(): void {
 
   mainWindow.on('minimize', function (event: Event) {
     event.preventDefault()
-    mainWindow.hide()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -171,7 +172,6 @@ app.whenReady().then(() => {
       startPresence(currentPlayerName)
     } catch (error) {
       ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
-      // mainWindow.webContents.send('presenceMode', ['error', null, error])
       console.log(error)
     }
   })
