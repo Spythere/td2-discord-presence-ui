@@ -1,22 +1,38 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { Ref, ref } from 'vue'
 import icon from '../../../resources/icon.png'
 import { version } from '../../../package.json'
-import { PresenceModeDataIPC } from '@shared/types/ipc'
+import { ActivityType, Connection } from '../../shared/types/common'
 
 const nickname = ref('')
 const searchedNickname = ref('')
 
-const presenceData = reactive({ connected: false }) as PresenceModeDataIPC
+const discordUsername = ref('')
+const connection = ref('not-connected') as Ref<Connection>
+const activityType = ref('idle') as Ref<ActivityType>
+const activityUser = ref('')
+const errorMsg = ref('')
 
-window.electron.ipcRenderer.on('presenceMode', (_event, args) => {
-  const payback = args[0] as PresenceModeDataIPC
+window.electron.ipcRenderer.on('activity', (_event, args) => {
+  console.log('Activity:', args)
 
-  presenceData['activityType'] = payback['activityType']
-  presenceData['activityUser'] = payback['activityUser']
-  presenceData['connected'] = payback['connected']
-  presenceData['discordUsername'] = payback['discordUsername']
-  presenceData['error'] = payback['error']
+  activityType.value = args[0] as ActivityType
+  activityUser.value = args[1]
+
+  errorMsg.value = args[2] ?? ''
+})
+
+window.electron.ipcRenderer.on('connection', (_event, args) => {
+  console.log('Connection:', args)
+
+  connection.value = args[0]
+  errorMsg.value = args[1] ?? ''
+})
+
+window.electron.ipcRenderer.on('discord-username', (_event, args) => {
+  console.log('Discord username:', args)
+
+  discordUsername.value = args[0]
 })
 
 async function fetchPlayerData() {
@@ -70,29 +86,19 @@ function exit() {
     </div>
 
     <div class="presence-status">
-      <div
-        class="connection"
-        :data-error="presenceData.error !== undefined"
-        :data-connected="presenceData.connected"
-      >
-        <span v-if="presenceData.error">
-          Błąd podczas łączenia z Discordem ({{ presenceData.error }})
-        </span>
-        <span v-else-if="presenceData.connected == false">Brak połączenia z Discordem</span>
-        <span v-else>
-          Połączenie z Discordem aktywne (użytkownik: {{ presenceData.discordUsername }})
-        </span>
+      <div class="connection" :data-error="errorMsg != ''" :data-connected="connection">
+        <span v-if="errorMsg != ''"> Błąd podczas łączenia z Discordem ({{ errorMsg }}) </span>
+        <span v-else-if="connection == 'not-connected'">Brak połączenia z Discordem</span>
+        <span v-else> Połączenie z Discordem aktywne (użytkownik: {{ discordUsername }}) </span>
       </div>
 
-      <div v-if="presenceData.activityType == 'driver'" class="driver">
-        Maszynista: {{ presenceData.activityUser }}
+      <div v-if="activityType == 'driver'" class="driver">Maszynista: {{ activityUser }}</div>
+
+      <div v-else-if="activityType == 'dispatcher'" class="dispatcher">
+        Dyżurny: {{ activityUser }}
       </div>
 
-      <div v-else-if="presenceData.activityType == 'dispatcher'" class="dispatcher">
-        Dyżurny: {{ presenceData.activityUser }}
-      </div>
-
-      <div v-else-if="presenceData.activityType == 'none'">
+      <div v-else-if="activityType == 'not-found'">
         Oczekiwanie na gracza <i>{{ searchedNickname }}</i
         >...
       </div>
@@ -133,15 +139,15 @@ function exit() {
   min-height: 60px;
 }
 
-.connection {
+.connection[data-connected='connected'] {
   color: limegreen;
 }
 
-.connection[data-connected='false'] {
+.connection[data-connected='not-connected'] {
   color: #bbb;
 }
 
-.connection[data-error='true'] {
+.connection[data-error='error'] {
   color: firebrick;
 }
 </style>

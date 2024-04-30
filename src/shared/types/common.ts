@@ -1,4 +1,5 @@
-export type ActivityType = 'none' | 'idle' | 'searching' | 'driver' | 'dispatcher'
+export type ActivityType = 'idle' | 'searching' | 'driver' | 'dispatcher' | 'not-found'
+export type Connection = 'connected' | 'error' | 'not-connected'
 
 export interface PlayerActivity {
   driver: Driver | null

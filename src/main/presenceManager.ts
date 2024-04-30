@@ -50,9 +50,7 @@ export abstract class PresenceManager {
     this.lastPlayerName = ''
   }
 
-  static async setPlayerActivity(
-    activityData: PlayerActivity
-  ): Promise<[ActivityType, string | null]> {
+  static async setPlayerActivity(activityData: PlayerActivity): Promise<[ActivityType, string]> {
     if (!this.client || !this.client.user) throw 'Discord disconnected'
 
     const { driver, dispatcher } = activityData
@@ -137,7 +135,8 @@ export abstract class PresenceManager {
       return ['dispatcher', dispatcher[0].dispatcherName]
     }
 
-    await this.resetActivity()
-    return ['none', null]
+    // await this.resetActivity()
+
+    return ['not-found', '']
   }
 }

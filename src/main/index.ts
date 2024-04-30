@@ -1,5 +1,4 @@
 import { app, shell, BrowserWindow, ipcMain, Event, dialog } from 'electron'
-import { join } from 'path'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
 import icon from '../../resources/icon.png?asset'
@@ -7,19 +6,11 @@ import { Menu, Tray } from 'electron/main'
 import settings from 'electron-settings'
 import { PresenceManager } from './presenceManager'
 import { fetchPresenceData } from './http'
-import { PresenceModeDataIPC } from '../shared/types/ipc'
+import { join } from 'path'
 
 let mainWindow: BrowserWindow
 let interval: undefined | NodeJS.Timeout = undefined
-
-function ipcCallbackToRenderer(mainWindow: BrowserWindow, data: PresenceModeDataIPC) {
-  mainWindow.webContents.send('presenceMode', [
-    {
-      ...data,
-      discordUsername: PresenceManager.client.user?.username ?? '---'
-    } as PresenceModeDataIPC
-  ])
-}
+let firstRun = false
 
 async function initPresence() {
   console.log('presence: init')
@@ -36,6 +27,8 @@ async function initPresence() {
   }
 
   await PresenceManager.connectToDiscord()
+
+  mainWindow.webContents.send('discord-username', [PresenceManager.client.user?.username ?? ''])
 }
 
 async function startPresence(currentPlayerName: string) {
@@ -54,15 +47,15 @@ async function stopPresence() {
   if (!PresenceManager.client) return
 
   if (!PresenceManager.client.user) {
-    ipcCallbackToRenderer(mainWindow, { connected: false, error: 'No discord connection' })
+    mainWindow.webContents.send('connection', ['error', 'No Discord connection!'])
     return
   }
 
   try {
     PresenceManager.resetActivity()
-    ipcCallbackToRenderer(mainWindow, { connected: true })
+    mainWindow.webContents.send('activity', ['idle', ''])
   } catch (error) {
-    ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+    mainWindow.webContents.send('activity', ['error', '', error])
   }
 }
 
@@ -70,18 +63,19 @@ async function updatePresence(currentPlayerName: string) {
   console.log('presence: update ' + currentPlayerName)
 
   try {
-    ipcCallbackToRenderer(mainWindow, { connected: true, activityType: 'searching' })
+    if (firstRun) {
+      mainWindow.webContents.send('activity', ['searching', ''])
+      firstRun = false
+    }
+
     const data = (await fetchPresenceData(currentPlayerName)).data
 
     const activityMode = await PresenceManager.setPlayerActivity(data)
 
-    ipcCallbackToRenderer(mainWindow, {
-      connected: true,
-      activityType: activityMode[0],
-      activityUser: activityMode[1] ?? undefined
-    })
+    mainWindow.webContents.send('connection', ['connected'])
+    mainWindow.webContents.send('activity', [activityMode[0], activityMode[1]])
   } catch (error) {
-    ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+    mainWindow.webContents.send('connection', ['error', error])
     console.error('Presence: error occured!', error)
   }
 }
@@ -171,7 +165,7 @@ app.whenReady().then(() => {
       const currentPlayerName = args[0]
       startPresence(currentPlayerName)
     } catch (error) {
-      ipcCallbackToRenderer(mainWindow, { connected: false, error: error })
+      mainWindow.webContents.send('connected', ['error', error])
       console.log(error)
     }
   })
