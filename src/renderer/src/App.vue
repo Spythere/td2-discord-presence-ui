@@ -147,7 +147,7 @@ function exit() {
   color: #bbb;
 }
 
-.connection[data-error='error'] {
+.connection[data-connected='error'] {
   color: firebrick;
 }
 </style>

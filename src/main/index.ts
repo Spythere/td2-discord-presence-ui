@@ -27,7 +27,6 @@ async function initPresence() {
   }
 
   await PresenceManager.connectToDiscord()
-
   mainWindow.webContents.send('discord-username', [PresenceManager.client.user?.username ?? ''])
 }
 
@@ -54,6 +53,7 @@ async function stopPresence() {
   try {
     PresenceManager.resetActivity()
     mainWindow.webContents.send('activity', ['idle', ''])
+    mainWindow.webContents.send('connection', ['connected'])
   } catch (error) {
     mainWindow.webContents.send('activity', ['error', '', error])
   }
@@ -165,7 +165,7 @@ app.whenReady().then(() => {
       const currentPlayerName = args[0]
       startPresence(currentPlayerName)
     } catch (error) {
-      mainWindow.webContents.send('connected', ['error', error])
+      mainWindow.webContents.send('connection', ['error', error])
       console.log(error)
     }
   })
