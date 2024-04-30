@@ -16,9 +16,9 @@ async function initPresence() {
   console.log('presence: init')
 
   if (!(await settings.get('reminder2.set'))) {
-    dialog.showMessageBox({
+    await dialog.showMessageBox({
       message:
-        'Upewnij się, że twoje ustawienia statusów aktywności Discorda (Ustawienia -> Prywatność aktywności) oraz osobiste ustawienia prywatności serwera, na którym chcesz pokazać aktywność są włączone! W innym wypadku aktywność nie będzie pokazana dla innych osób (nawet jeśli u ciebie jest ona wyświetlana)!',
+        'Upewnij się, że twoje ustawienia statusów aktywności Discorda (Ustawienia -> Prywatność aktywności) oraz osobiste ustawienia prywatności serwera, na którym chcesz pokazać aktywność są włączone! W innym wypadku aktywność nie będzie pokazana dla innych osób (nawet jeśli u ciebie jest ona wyświetlana)! Miłego korzystania o7',
       title: 'Przypomnienie o ustawieniach prywatności!',
       icon
     })
@@ -34,6 +34,7 @@ async function startPresence(currentPlayerName: string) {
   console.log('presence: start')
 
   updatePresence(currentPlayerName)
+  await settings.set('playerName', currentPlayerName)
 
   if (interval != null) clearInterval(interval)
   interval = setInterval(() => updatePresence(currentPlayerName), 10000)
@@ -116,8 +117,15 @@ function createWindow(): void {
     })
   })
 
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.on('ready-to-show', async () => {
     mainWindow.show()
+
+    const savedPlayerName = await settings.get('playerName')
+
+    if (savedPlayerName) {
+      console.log('Saved player name', savedPlayerName)
+      mainWindow.webContents.send('saved-playername', [savedPlayerName])
+    }
   })
 
   mainWindow.on('minimize', function (event: Event) {

@@ -22,6 +22,12 @@ window.electron.ipcRenderer.on('activity', (_event, args) => {
   errorMsg.value = args[2] ?? ''
 })
 
+window.electron.ipcRenderer.on('saved-playername', (_event, args) => {
+  console.log('Saved player name:', args[0])
+
+  nickname.value = args[0]
+})
+
 window.electron.ipcRenderer.on('connection', (_event, args) => {
   console.log('Connection:', args)
 
