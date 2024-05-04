@@ -151,6 +151,7 @@ app.whenReady().then(() => {
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'TD2 Discord Presence', type: 'normal', click: () => mainWindow.show() },
+    { label: 'Minimalizuj do zasobnika', type: 'normal', click: () => mainWindow.hide() },
     { label: 'Wyjdź z Presence', type: 'normal', click: () => app.quit() }
   ])
 
