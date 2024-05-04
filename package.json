@@ -1,6 +1,6 @@
 {
   "name": "td2-discord-presence",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Discord Presence wyświetlający aktywność w symulatorze Train Driver 2",
   "main": "./out/main/index.js",
   "author": "Spythere",
