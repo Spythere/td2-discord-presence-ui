@@ -55,6 +55,8 @@ function searchUser() {
 }
 
 function resetPresence() {
+  if (searchedNickname.value == '') return
+
   searchedNickname.value = ''
   nickname.value = ''
 

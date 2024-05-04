@@ -135,8 +135,7 @@ export abstract class PresenceManager {
       return ['dispatcher', dispatcher[0].dispatcherName]
     }
 
-    // await this.resetActivity()
-
+    await this.resetActivity()
     return ['not-found', '']
   }
 }
