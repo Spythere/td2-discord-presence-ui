@@ -111,7 +111,7 @@ function createWindow(): void {
     mainWindow.webContents.send('updateStatus', ['New version'])
 
     dialog.showMessageBox({
-      message: `Nowa wersja aplikacji dostępna (v${info.version})! Aktualizacja zostanie zainstalowana automatycznie po wyjściu z aplikacji!`,
+      message: `Nowa wersja aplikacji dostępna (v${info.version})! Aktualizacja zostanie zainstalowana automatycznie po wyjściu z aplikacji (daj jej chwilę na zainstalowanie)!`,
       title: 'Nowa wersja TD2 Discord Presence',
       icon
     })
