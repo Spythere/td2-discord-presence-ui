@@ -30,7 +30,8 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
-    "build:release": "npm run build && electron-builder -p always --win"
+    "build:release": "npm run build && electron-builder -p always --win",
+    "release": " electron-builder -p always --win"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
@@ -50,11 +51,13 @@
     "@vitejs/plugin-vue": "^5.0.3",
     "@vue/eslint-config-prettier": "^9.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",
+    "autoprefixer": "^10.4.19",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.20.1",
+    "postcss": "^8.4.38",
     "prettier": "^3.2.4",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.3.3",
