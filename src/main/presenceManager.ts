@@ -93,7 +93,7 @@ export abstract class PresenceManager {
           {
             label: timetable ? 'Szczegółowy rozkład jazdy' : 'Informacje o maszyniście',
             url: encodeURI(
-              `https://stacjownik-td2.web.app/trains?trainId=${driver.driverName}${driver.trainNo}`
+              `https://stacjownik-td2.spythere.eu/trains?trainId=${driver.driverName}${driver.trainNo}`
             )
           }
         ]
@@ -124,7 +124,7 @@ export abstract class PresenceManager {
           {
             label: 'Szczegóły scenerii',
             url: encodeURI(
-              `https://stacjownik-td2.web.app/scenery?station=${dispatcher[this.currentDispatcherIndex].stationName}`
+              `https://stacjownik-td2.spythere.eu/scenery?station=${dispatcher[this.currentDispatcherIndex].stationName}`
             )
           }
         ]

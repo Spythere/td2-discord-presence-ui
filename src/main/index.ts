@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, Event, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
 import icon from '../../resources/icon.png?asset'
@@ -126,10 +126,6 @@ function createWindow(): void {
       console.log('Saved player name', savedPlayerName)
       mainWindow.webContents.send('saved-playername', [savedPlayerName])
     }
-  })
-
-  mainWindow.on('minimize', function (event: Event) {
-    event.preventDefault()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
