@@ -1,3 +1,52 @@
+<template>
+  <div class="app-container">
+    <div class="logo">
+      <img :src="icon" width="70" alt="" />
+      <span>
+        TD2 DISCORD <br />
+        PRESENCE <sup style="font-size: 0.7em">v{{ version }}</sup>
+      </span>
+    </div>
+
+    <div class="player-input-box">
+      <input
+        v-model="nickname"
+        type="text"
+        placeholder="Wpisz nick..."
+        :disabled="searchedNickname != ''"
+        @keydown.enter="searchUser"
+      />
+    </div>
+
+    <div class="action-buttons">
+      <button class="action" @click="searchUser">Szukaj</button>
+      <button class="action" @click="resetPresence">Resetuj</button>
+      <button class="action" @click="exit">Wyjdź</button>
+    </div>
+
+    <div class="presence-status">
+      <div class="connection" :data-error="errorMsg != ''" :data-connected="connection">
+        <span v-if="errorMsg != ''"> Błąd podczas łączenia z Discordem ({{ errorMsg }}) </span>
+        <span v-else-if="connection == 'not-connected'">Brak połączenia z Discordem</span>
+        <span v-else> Połączenie z Discordem aktywne (użytkownik: {{ discordUsername }}) </span>
+      </div>
+
+      <div v-if="activityType == 'driver'" class="driver">Maszynista: {{ activityUser }}</div>
+
+      <div v-else-if="activityType == 'dispatcher'" class="dispatcher">
+        Dyżurny: {{ activityUser }}
+      </div>
+
+      <div v-else-if="activityType == 'not-found'">
+        Oczekiwanie na gracza <i>{{ searchedNickname }}</i
+        >...
+      </div>
+
+      <div v-else>Brak informacji o użytkowniku</div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { Ref, ref } from 'vue'
 import icon from '../../../resources/icon.png'
@@ -68,54 +117,6 @@ function exit() {
 }
 </script>
 
-<template>
-  <div class="app-container">
-    <div class="logo">
-      <img :src="icon" width="70" alt="" />
-      <span>
-        TD2 DISCORD <br />
-        PRESENCE <sup style="font-size: 0.7em">v{{ version }}</sup>
-      </span>
-    </div>
-    <div class="player-input">
-      <input
-        v-model="nickname"
-        type="text"
-        placeholder="Wpisz nick..."
-        :disabled="searchedNickname != ''"
-        @keydown.enter="searchUser"
-      />
-    </div>
-
-    <div class="actions">
-      <button class="action" @click="searchUser">Szukaj</button>
-      <button class="action" @click="resetPresence">Resetuj</button>
-      <button class="action" @click="exit">Wyjdź</button>
-    </div>
-
-    <div class="presence-status">
-      <div class="connection" :data-error="errorMsg != ''" :data-connected="connection">
-        <span v-if="errorMsg != ''"> Błąd podczas łączenia z Discordem ({{ errorMsg }}) </span>
-        <span v-else-if="connection == 'not-connected'">Brak połączenia z Discordem</span>
-        <span v-else> Połączenie z Discordem aktywne (użytkownik: {{ discordUsername }}) </span>
-      </div>
-
-      <div v-if="activityType == 'driver'" class="driver">Maszynista: {{ activityUser }}</div>
-
-      <div v-else-if="activityType == 'dispatcher'" class="dispatcher">
-        Dyżurny: {{ activityUser }}
-      </div>
-
-      <div v-else-if="activityType == 'not-found'">
-        Oczekiwanie na gracza <i>{{ searchedNickname }}</i
-        >...
-      </div>
-
-      <div v-else>...</div>
-    </div>
-  </div>
-</template>
-
 <style scoped>
 .app-container {
   text-align: center;
@@ -132,11 +133,11 @@ function exit() {
   margin-bottom: 1em;
 }
 
-.player-input {
+.player-input-box {
   margin-bottom: 1em;
 }
 
-.actions {
+.action-buttons {
   display: flex;
   justify-content: center;
   gap: 0.5em;
